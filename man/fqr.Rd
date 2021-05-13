@@ -14,7 +14,7 @@ fit_fqr(
   smoothing_window = .Machine$double.eps,
   maxiter = 10000,
   beta_tol = 1e-16,
-  check_tol = 1e-10 * nrow(X),
+  check_tol = 1e-15 * nrow(X),
   intercept = 1,
   nsubsamples = 1000,
   nwarmup_samples = 1000,
@@ -29,7 +29,7 @@ fqr(
   smoothing_window = .Machine$double.eps,
   maxiter = 10000,
   beta_tol = 1e-16,
-  check_tol = 1e-10 * nrow(data),
+  check_tol = 1e-15 * nrow(data),
   nwarmup_samples = 1000,
   warm_start = 1,
   nsubsamples = 1000

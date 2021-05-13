@@ -45,3 +45,6 @@ testthat::test_that("Fast exponential weights work", {
   testthat::expect_lt(mean(fast_rexp(100000)), 2)
 })
 
+testthat::test_that("Print functions generate output", {
+  testthat::expect_output(print(fit), "Tau")
+})

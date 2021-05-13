@@ -8,12 +8,18 @@ coverage](https://codecov.io/gh/be-green/fqr/branch/main/graph/badge.svg)](https
 [![R-CMD-check](https://github.com/be-green/fqr/workflows/R-CMD-check/badge.svg)](https://github.com/be-green/fqr/actions)
 <!-- badges: end -->
 
-The fqr package makes quantile regression fast and scaleable using
-accelerated gradient descent. While the quantile loss function isn’t
-differentiable, you can get an arbitrarily close smooth approximation by
-replacing the “check” function with an appropriately tilted least
-squares approximation for a small neighborhood around the origin. As the
-size of that window goes to zero, you have your check function back!
+The `fqr` package makes quantile regression fast and scaleable using
+accelerated gradient descent. For both big and small problems it is
+substantially faster than other quantile regression approaches. `fqr`
+can handle quantile regression problems on the order of 10 million rows
+and 100 columns in less than a minute, and can exactly match existing
+implementations on small problems.
+
+While the quantile loss function isn’t differentiable, you can get an
+arbitrarily close smooth approximation by replacing the “check” function
+with an appropriately tilted least squares approximation for a small
+neighborhood around the origin. As the size of that window goes to zero,
+you have your check function back!
 
 The package uses 2 stopping rules to assess convergence: the maximum
 value of the gradient vector (for the coefficients of the quantile
@@ -50,16 +56,16 @@ data(rocks)
 fqr(area ~ peri, data = rock, tau = c(0.25, 0.5, 0.75))
 #> Tau:  0.25 
 #>              Coefficient           SE
-#> (Intercept) 5.214371e+03 498.53198357
-#> peri        4.107717e-02   0.01090661
+#> (Intercept) 5.212861e+03 481.74239386
+#> peri        4.222352e-02   0.01199872
 #> Tau:  0.5 
-#>             Coefficient           SE
-#> (Intercept) 7350.836410 4.168024e+02
-#> peri           0.048653 6.823924e-03
+#>              Coefficient           SE
+#> (Intercept) 7.347485e+03 4.190952e+02
+#> peri        4.979935e-02 7.111505e-03
 #> Tau:  0.75 
 #>              Coefficient           SE
-#> (Intercept) 8.740056e+03 3.981218e+02
-#> peri        4.033071e-02 5.394272e-03
+#> (Intercept) 8.735965e+03 3.964507e+02
+#> peri        4.146744e-02 5.015366e-03
 ```
 
 To turn off standard errors (and just get point predictions), you can
@@ -69,16 +75,16 @@ set `se = F`.
 fqr(area ~ peri, data = rock, se = F, tau = c(0.25, 0.5, 0.75))
 #> Tau:  0.25 
 #>              Coefficient SE
-#> (Intercept) 5.213284e+03 NA
-#> peri        4.190239e-02 NA
+#> (Intercept) 5.213602e+03 NA
+#> peri        4.166057e-02 NA
 #> Tau:  0.5 
 #>              Coefficient SE
-#> (Intercept) 7.348424e+03 NA
-#> peri        4.947822e-02 NA
+#> (Intercept) 7349.1308648 NA
+#> peri           0.0492364 NA
 #> Tau:  0.75 
 #>              Coefficient SE
-#> (Intercept) 8.737112e+03 NA
-#> peri        4.114631e-02 NA
+#> (Intercept) 8.737976e+03 NA
+#> peri        4.090449e-02 NA
 ```
 
 ## Benchmarks
@@ -117,7 +123,7 @@ fit <- fit_fqr(x, y, tau = 0.5, se = F)
 end = proc.time()
 end - start
 #>    user  system elapsed 
-#>  17.628   0.357   3.663
+#>  18.642   0.361   3.715
 ```
 
 I attempted to run the same thing with the `quantreg` package, with the
@@ -152,7 +158,7 @@ fit <- fit_fqr(x, y, tau = 0.5, se = F)
 end = proc.time()
 end - start
 #>    user  system elapsed 
-#> 164.423   3.336  24.863
+#> 170.137   3.018  24.332
 ```
 
 I’m not going to run the quantreg `pfn` algorithm since it was so slow
@@ -176,7 +182,7 @@ fit <- fit_fqr(X = x, y = y, tau = 0.5, se = F)
 end = proc.time()
 end - start
 #>    user  system elapsed 
-#> 112.843   1.916  22.045
+#> 125.306   1.952  23.318
 ```
 
 I attempted to do the comparable thing for the `pfn` algorithm:
@@ -208,7 +214,7 @@ fit <- fit_fqr(X = x, y = y, tau = 0.5, se = F)
 end = proc.time()
 end - start
 #>    user  system elapsed 
-#>   0.832   0.069   0.231
+#>   0.927   0.060   0.228
 ```
 
 ``` r
@@ -217,19 +223,19 @@ fit_pfn <- quantreg::rq.fit.pfn(x = x, y = y, tau = 0.5)
 end = proc.time()
 end - start
 #>    user  system elapsed 
-#>   1.217   0.263   1.426
+#>   1.227   0.272   1.455
 ```
 
 The coefficients match out to the 4th or 5th decimal place:
 
 ``` r
 max(abs(fit$coefficients - fit_pfn$coefficients))
-#> [1] 8.977448e-05
+#> [1] 5.160971e-05
 ```
 
 ``` r
 min(abs(fit$coefficients - fit_pfn$coefficients))
-#> [1] 2.726844e-06
+#> [1] 2.748686e-06
 ```
 
 ### Small Problems
@@ -258,8 +264,8 @@ microbenchmark::microbenchmark(
 #>  fqr_fit <- fqr(y ~ ., se = F, beta_tol = 0, check_tol = 0, data = data.frame(y = y,      x))
 #>     br_fit <- quantreg::rq(y ~ ., tau = 0.5, data = data.frame(y = y,      x), method = "br")
 #>       min       lq     mean   median       uq      max neval
-#>  19.05055 19.98623 20.92135 20.65108 21.24894 26.97846   100
-#>  67.57361 68.66483 70.66433 69.19325 70.23377 83.04198   100
+#>  19.25711 20.38381 21.20529 20.93218 21.89705 24.85801   100
+#>  53.51122 54.37203 56.75390 55.05661 59.20620 67.35801   100
 ```
 
 The coefficients match out to 4 decimal places:
@@ -267,10 +273,10 @@ The coefficients match out to 4 decimal places:
 ``` r
 fqr_fit$coefficients - br_fit$coefficients
 #>               [,1]
-#> [1,]  1.053418e-05
-#> [2,] -4.118319e-05
-#> [3,] -3.619511e-05
-#> [4,]  1.184613e-05
+#> [1,]  4.074800e-04
+#> [2,] -2.274751e-04
+#> [3,] -7.187774e-05
+#> [4,]  3.054568e-04
 ```
 
 And the check loss is nearly identical:
@@ -281,7 +287,7 @@ check <- function (x, tau = 0.5) {
 }
 
 check(fqr_fit$residuals) -  check(br_fit$residuals)
-#> [1] 4.954552e-05
+#> [1] 0.0001677047
 ```
 
 Still, though, the speed gains are most noticeable once N and P are

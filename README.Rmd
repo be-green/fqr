@@ -18,8 +18,10 @@ knitr::opts_chunk$set(
 [![R-CMD-check](https://github.com/be-green/fqr/workflows/R-CMD-check/badge.svg)](https://github.com/be-green/fqr/actions)
 <!-- badges: end -->
 
-The fqr package makes quantile regression fast and scaleable using accelerated
-gradient descent. While the quantile loss function isn't differentiable, you can get an arbitrarily close smooth approximation by replacing the "check" function with an appropriately tilted least squares approximation for a small neighborhood around the origin. As the size of that window goes to zero, you have your check function back!
+The `fqr` package makes quantile regression fast and scaleable using accelerated
+gradient descent. For both big and small problems it is substantially faster than other quantile regression approaches. `fqr` can handle quantile regression problems on the order of 10 million rows and 100 columns in less than a minute, and can exactly match existing implementations on small problems.
+
+While the quantile loss function isn't differentiable, you can get an arbitrarily close smooth approximation by replacing the "check" function with an appropriately tilted least squares approximation for a small neighborhood around the origin. As the size of that window goes to zero, you have your check function back!
 
 The package uses 2 stopping rules to assess convergence: the maximum value of
 the gradient vector (for the coefficients of the quantile regression) and the
