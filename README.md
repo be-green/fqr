@@ -26,11 +26,11 @@ value of the gradient vector (for the coefficients of the quantile
 regression) and the relative change in the loss function (scaled by the
 step size).
 
-`fqr` is substantially faster than the `quantreg` package’s interior
-point methods (e.g. “br” or “sfn”), especially for large problems. The
-algorithm implemented via the Armadillo library for linear algebra in
-C++. It also has no dependencies other than base R and (if building from
-source) a C++ compiler.
+`fqr` is substantially faster than the `quantreg` package’s simplex and
+interior point methods (e.g. “br” or “pfn”), especially for large
+problems. The algorithm implemented via the Armadillo library for linear
+algebra in C++. It also has no dependencies other than base R and (if
+building from source) a C++ compiler.
 
 ## Installation
 
@@ -55,17 +55,17 @@ data(rocks)
 
 fqr(area ~ peri, data = rock, tau = c(0.25, 0.5, 0.75))
 #> Tau:  0.25 
-#>              Coefficient          SE
-#> (Intercept) 5.213532e+03 4.95748e+02
-#> peri        4.171438e-02 9.42343e-03
+#>              Coefficient           SE
+#> (Intercept) 5.213347e+03 500.04947110
+#> peri        4.185437e-02   0.01041795
 #> Tau:  0.5 
 #>              Coefficient           SE
-#> (Intercept) 7.348974e+03 4.237700e+02
-#> peri        4.929021e-02 9.436484e-03
+#> (Intercept) 7348.5642814 4.255263e+02
+#> peri           0.0494302 7.136446e-03
 #> Tau:  0.75 
 #>              Coefficient           SE
-#> (Intercept) 8737.7840987 4.100171e+02
-#> peri           0.0409583 4.366014e-03
+#> (Intercept) 8737.2838152 3.990133e+02
+#> peri           0.0410983 4.911924e-03
 ```
 
 To turn off standard errors (and just get point predictions), you can
@@ -75,16 +75,16 @@ set `se = F`.
 fqr(area ~ peri, data = rock, se = F, tau = c(0.25, 0.5, 0.75))
 #> Tau:  0.25 
 #>              Coefficient SE
-#> (Intercept) 5.212794e+03 NA
-#> peri        4.227374e-02 NA
+#> (Intercept) 5.214035e+03 NA
+#> peri        4.133264e-02 NA
 #> Tau:  0.5 
 #>              Coefficient SE
-#> (Intercept) 7.347338e+03 NA
-#> peri        4.984957e-02 NA
+#> (Intercept) 7.350090e+03 NA
+#> peri        4.890847e-02 NA
 #> Tau:  0.75 
 #>              Coefficient SE
-#> (Intercept) 8.735785e+03 NA
-#> peri        4.151766e-02 NA
+#> (Intercept) 8.739148e+03 NA
+#> peri        4.057656e-02 NA
 ```
 
 ## Benchmarks
@@ -123,7 +123,7 @@ fit <- fit_fqr(x, y, tau = 0.5, se = F)
 end = proc.time()
 end - start
 #>    user  system elapsed 
-#>  18.657   0.342   3.678
+#>  15.429   0.388   3.708
 ```
 
 I attempted to run the same thing with the `quantreg` package, with the
@@ -160,7 +160,7 @@ fit <- fit_fqr(x, y, tau = 0.5, se = F)
 end = proc.time()
 end - start
 #>    user  system elapsed 
-#> 166.528   3.283  24.162
+#> 152.218   3.381  24.449
 ```
 
 I’m not going to run the quantreg `pfn` algorithm since it was so slow
@@ -185,7 +185,7 @@ fit <- fit_fqr(X = x, y = y, tau = 0.5, se = F)
 end = proc.time()
 end - start
 #>    user  system elapsed 
-#> 130.258   2.380  26.246
+#>  93.293   2.060  20.329
 ```
 
 I attempted to do the comparable thing for the `pfn` algorithm:
@@ -217,7 +217,7 @@ fit <- fit_fqr(X = x, y = y, tau = 0.5, se = F)
 end = proc.time()
 end - start
 #>    user  system elapsed 
-#>   0.816   0.082   0.258
+#>   0.869   0.070   0.230
 ```
 
 ``` r
@@ -228,19 +228,19 @@ fit_pfn <- quantreg::rq.fit.pfn(x = x, y = y, tau = 0.5)
 end = proc.time()
 end - start
 #>    user  system elapsed 
-#>   1.568   0.388   1.787
+#>   1.574   0.383   1.790
 ```
 
 The coefficients match out to the 4th or 5th decimal place:
 
 ``` r
 max(abs(fit$coefficients - fit_pfn$coefficients))
-#> [1] 0.0001692084
+#> [1] 0.000122037
 ```
 
 ``` r
 min(abs(fit$coefficients - fit_pfn$coefficients))
-#> [1] 2.73855e-05
+#> [1] 2.132279e-06
 ```
 
 ### Small Problems
@@ -268,9 +268,9 @@ microbenchmark::microbenchmark(
 #>                                                                                          expr
 #>  fqr_fit <- fqr(y ~ ., se = F, beta_tol = 0, check_tol = 0, data = data.frame(y = y,      x))
 #>     br_fit <- quantreg::rq(y ~ ., tau = 0.5, data = data.frame(y = y,      x), method = "br")
-#>       min       lq     mean   median       uq      max neval
-#>  19.56768 20.35506 21.64151 21.27247 22.49673 26.15580   100
-#>  70.09263 71.68164 76.51875 73.09445 81.44682 99.98671   100
+#>       min       lq     mean  median       uq      max neval
+#>  19.48368 20.30906 21.50476 20.8557 21.74249 34.92471   100
+#>  75.13717 76.34309 80.20037 77.4336 82.66268 98.75256   100
 ```
 
 The coefficients match out to 4 decimal places:
@@ -278,10 +278,10 @@ The coefficients match out to 4 decimal places:
 ``` r
 fqr_fit$coefficients - br_fit$coefficients
 #>               [,1]
-#> [1,] -4.246052e-06
-#> [2,]  3.013617e-04
-#> [3,]  1.435971e-04
-#> [4,] -5.918821e-05
+#> [1,] -0.0009031814
+#> [2,]  0.0012812620
+#> [3,] -0.0004906861
+#> [4,] -0.0002251114
 ```
 
 And the check loss is nearly identical:
@@ -292,7 +292,7 @@ check <- function (x, tau = 0.5) {
 }
 
 check(fqr_fit$residuals) -  check(br_fit$residuals)
-#> [1] 0.001296788
+#> [1] 0.0001522271
 ```
 
 Still, though, the speed gains are most noticeable once N and P are

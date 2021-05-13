@@ -27,8 +27,8 @@ The package uses 2 stopping rules to assess convergence: the maximum value of
 the gradient vector (for the coefficients of the quantile regression) and the
 relative change in the loss function (scaled by the step size).
 
-`fqr` is substantially faster than the `quantreg` package's interior
-point methods (e.g. "br" or "sfn"), especially for large problems. The algorithm implemented via the Armadillo library for linear algebra in C++. It also has no dependencies other than base R and (if building from source) a C++ compiler.
+`fqr` is substantially faster than the `quantreg` package's simplex and interior
+point methods (e.g. "br" or "pfn"), especially for large problems. The algorithm implemented via the Armadillo library for linear algebra in C++. It also has no dependencies other than base R and (if building from source) a C++ compiler.
 
 ## Installation
 
