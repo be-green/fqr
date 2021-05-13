@@ -2,7 +2,7 @@ Package: fqr
 Type: Package
 Title: Fast Quantile Regression
 Version: 0.1.0
-Author: Brice Green [cre, aut] <bcg@mit.edu>, Lukas Facile [ctb]
+Author: Brice Green <bcg@mit.edu>
 Maintainer: Brice Green <bcg@mit.edu>
 Description: The fqr package uses accelerated gradient descent combined with a huber-style approximation of the quantile loss function to perform linear quantile regression at scale.
 License: MIT + file LICENSE

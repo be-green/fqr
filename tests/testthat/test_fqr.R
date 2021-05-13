@@ -48,3 +48,11 @@ testthat::test_that("Fast exponential weights work", {
 testthat::test_that("Print functions generate output", {
   testthat::expect_output(print(fit), "Tau")
 })
+
+x = matrix(rnorm(10000, mean = 1, sd = 2), ncol = 1)
+z_score(x, 1, 2, p = 1)
+testthat::test_that("Z scoring code works", {
+  testthat::expect_lt(abs(sd(x) - 1), 0.05)
+  testthat::expect_lt(abs(mean(x)), 0.01)
+
+})
