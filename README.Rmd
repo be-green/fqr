@@ -11,7 +11,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-# fqr
+# fqr: Fast (and Accurate) Quantile Regression
 
 <!-- badges: start -->
 [![Codecov test coverage](https://codecov.io/gh/be-green/fqr/branch/main/graph/badge.svg)](https://codecov.io/gh/be-green/fqr?branch=main)
@@ -101,7 +101,7 @@ end <- proc.time()
 end - start
 ```
 
-but I killed it after 20 minutes (feel free to try this yourself!).
+but I killed it after 20 minutes (feel free to try this yourself!). I guess that leaves us with a comparison between ~3-5 seconds for `fqr` and a lower bound of 20 minutes for `pfn`?
 
 # Big N, Big P
 
@@ -124,7 +124,8 @@ end = proc.time()
 end - start
 ```
 
-I'm not going to run the quantreg `pfn` algorithm since it was so slow for the last problem.
+I'm not going to run the quantreg `pfn` algorithm since it was so slow for the last problem. `fqr` is a little bit slower as the columns get big, taking 25-30 
+seconds.
 
 ### Big N, Small P
 Let's try a more manageable set of dimensions, with _lots_ of observations.
@@ -135,7 +136,7 @@ n <- 1e7
 beta <- rnorm(p + 1)
 
 x <- cbind(1, matrix(rnorm(p * n), ncol = p, nrow = n))
-y <- x %*% beta + exp(rnorm(n, sd= 2))
+y <- x %*% beta + exp(rnorm(n, sd = 2))
 
 start = proc.time()
 fit <- fit_fqr(X = x, y = y, tau = 0.5, se = F)
@@ -162,7 +163,7 @@ n <- 1e5
 beta <- rnorm(p + 1)
 
 x <- cbind(1, matrix(rnorm(p * n), ncol = p, nrow = n))
-y <- x %*% beta + exp(rnorm(n, sd= 2))
+y <- x %*% beta + exp(rnorm(n, sd = 2))
 
 start = proc.time()
 fit <- fit_fqr(X = x, y = y, tau = 0.5, se = F)
