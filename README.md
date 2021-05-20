@@ -116,7 +116,6 @@ hist(y)
 Ok so we have some *very* skewed data! Perfect for median regression.
 
 ``` r
-# remove the intercept since it's implied in the formula
 start = proc.time()
 # lower level version that just takes design matrix
 fit <- fit_fqr(x, y, tau = 0.5, se = F)
