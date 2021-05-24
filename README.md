@@ -50,8 +50,7 @@ with standard errors calculated based on subsampling.
 
 ``` r
 library(fqr)
-data(rocks)
-#> Warning in data(rocks): data set 'rocks' not found
+data(rock)
 
 fqr(area ~ peri, data = rock, tau = c(0.25, 0.5, 0.75))
 #> Tau:  0.25 
