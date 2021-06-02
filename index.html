@@ -84,7 +84,7 @@
 <a href="#basic-use" class="anchor"></a>Basic Use</h2>
 <p>The <code>fqr</code> package uses the same basic formula interface that <code>lm</code> does, with standard errors calculated based on subsampling.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va">fqr</span><span class="op">)</span>
+<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://brice.green/fqr">fqr</a></span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span><span class="op">(</span><span class="va">rock</span><span class="op">)</span>
 
 <span class="fu"><a href="reference/fit_fqr.html">fqr</a></span><span class="op">(</span><span class="va">area</span> <span class="op">~</span> <span class="va">peri</span>, data <span class="op">=</span> <span class="va">rock</span>, tau <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">0.25</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span><span class="op">)</span><span class="op">)</span>

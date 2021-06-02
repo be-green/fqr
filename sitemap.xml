@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://brice.green/fqr/index.html</loc>
+  </url>
+  <url>
+    <loc>https://brice.green/fqr/reference/coef.fqr.html</loc>
+  </url>
+  <url>
+    <loc>https://brice.green/fqr/reference/fit_approx_quantile_model.html</loc>
+  </url>
+  <url>
+    <loc>https://brice.green/fqr/reference/fqr.html</loc>
+  </url>
+  <url>
+    <loc>https://brice.green/fqr/reference/get_intercept.html</loc>
+  </url>
+  <url>
+    <loc>https://brice.green/fqr/reference/predict.fqr.html</loc>
+  </url>
+  <url>
+    <loc>https://brice.green/fqr/reference/print.fqr.html</loc>
+  </url>
+</urlset>

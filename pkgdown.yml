@@ -2,5 +2,8 @@ pandoc: 2.7.3
 pkgdown: 1.6.1
 pkgdown_sha: ~
 articles: {}
-last_built: 2021-06-02T16:25Z
+last_built: 2021-06-02T16:35Z
+urls:
+  reference: https://brice.green/fqr/reference
+  article: https://brice.green/fqr/articles
 
