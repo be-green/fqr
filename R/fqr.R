@@ -242,8 +242,8 @@ fqr <- function(formula, data, tau = 0.5,
                 nsubsamples = 1000) {
   m = stats::model.matrix(formula, data = data)
   intercept = get_intercept(m)
-  y_ind = attr(stats::terms(formula, data = data), "response")
-  y = data[,y_ind]
+  y = stats::model.response(stats::model.frame(formula, data),
+                                type = "numeric")
   fit = fit_fqr(X = m, y = y,
                 tau = tau, se = se,
                 init_beta = stats::rnorm(ncol(m)),
