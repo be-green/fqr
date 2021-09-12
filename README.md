@@ -1,5 +1,5 @@
 
-# fqr: Fast (and Accurate) Quantile Regression
+# fqr: Fast (Approximate) Quantile Regression
 
 <!-- badges: start -->
 
