@@ -9,7 +9,7 @@ coverage](https://codecov.io/gh/be-green/fqr/branch/main/graph/badge.svg)](https
 <!-- badges: end -->
 
 The `fqr` package makes quantile regression fast and scaleable using
-accelerated gradient descent, with code (and inspiration) taken largely from the approach described in the [conquer package](https://github.com/XiaoouPan/conquer) and [paper](https://doi.org/10.1016/j.jeconom.2021.07.010). This project began as a user-friendly edit of that package for use in the [quantspace package](https://github.com/be-green), but using a Huber approximation instead of a kernel-smoothed loss function.
+accelerated gradient descent, with code based on the implementation in the [conquer package](https://github.com/XiaoouPan/conquer) and [paper](https://doi.org/10.1016/j.jeconom.2021.07.010). This project began as a user-friendly edit of that package for use in the [quantspace package](https://github.com/be-green), but using a Huber approximation instead of a kernel-smoothed loss function, adding in accelerated gradient descent and additional convergence checks.
 
 `fqr`can handle quantile regression problems on the order of 10 million rows
 and 100 columns in less than a minute, and can exactly match existing
