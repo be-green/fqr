@@ -28,7 +28,7 @@ step size).
 
 `fqr` is substantially faster than the `quantreg` package’s simplex and
 interior point methods (e.g. “br” or “pfn”), especially for large
-problems, and is comparable to the `conquer` package, though it tends to be slightly slower due to the default accuracy tolerance settings. The algorithm implemented via the Armadillo library for linear
+problems, and is comparable to the `conquer` package, though it tends to be slightly slower due to the default accuracy tolerance settings and some overhead from additional convergence checks. The algorithm implemented via the Armadillo library for linear
 algebra in C++. It also has no dependencies other than base R and (if
 building from source) a C++ compiler.
 
