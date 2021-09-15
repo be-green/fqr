@@ -11,11 +11,16 @@ LazyData: true
 RoxygenNote: 7.1.1
 LinkingTo: 
     Rcpp,
-    RcppArmadillo
+    RcppArmadillo,
+    RcppParallel
 Imports: 
+    RcppParallel,
     Rcpp
 Suggests: 
+    knitr,
     covr,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    rmarkdown
 Config/testthat/edition: 3
 URL: https://brice.green/fqr
+VignetteBuilder: knitr

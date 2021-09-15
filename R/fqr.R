@@ -9,6 +9,19 @@ NULL
 NULL
 
 
+## usethis namespace: start
+#' @importFrom RcppParallel RcppParallelLibs
+## usethis namespace: end
+NULL
+
+#' Quantile Loss Function
+#' @param x residuals to be evaluated
+#' @param tau quantile to use
+check <- function(x,tau=.5){
+  x * (tau - (x < 0))
+}
+
+
 #' Finds which column of X has the intercept term
 #' @param X design matrix for regression
 get_intercept <- function(X) {
