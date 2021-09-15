@@ -1,5 +1,5 @@
 
-# fqr: Fast (and Accurate) Quantile Regression
+# fqr: Fast (Approximate) Quantile Regression
 
 <!-- badges: start -->
 
@@ -9,9 +9,9 @@ coverage](https://codecov.io/gh/be-green/fqr/branch/main/graph/badge.svg)](https
 <!-- badges: end -->
 
 The `fqr` package makes quantile regression fast and scaleable using
-accelerated gradient descent. For both big and small problems it is
-substantially faster than other quantile regression approaches. `fqr`
-can handle quantile regression problems on the order of 10 million rows
+accelerated gradient descent. This project began as an attempt at a smoothed version of the quantile objective function based on [Nesterov's 2005 paper](https://link.springer.com/article/10.1007/s10107-004-0552-5) for use in the [quantspace package](https://github.com/be-green) for problems too large for interior point methods to handle. The [conquer package](https://github.com/XiaoouPan/conquer) has an efficient approach to gradient descent and a very useful step-size selection approach, and the relevant code in this package is largely drawn from their implementation in the conquer [package](https://github.com/XiaoouPan/conquer) and [paper](https://doi.org/10.1016/j.jeconom.2021.07.010).
+
+`fqr`can handle quantile regression problems on the order of 10 million rows
 and 100 columns in less than a minute, and can exactly match existing
 implementations on small problems.
 
@@ -28,7 +28,7 @@ step size).
 
 `fqr` is substantially faster than the `quantreg` package’s simplex and
 interior point methods (e.g. “br” or “pfn”), especially for large
-problems. The algorithm implemented via the Armadillo library for linear
+problems, and is comparable to the `conquer` package, though it tends to be slightly slower due to the default accuracy tolerance settings and some overhead from additional convergence checks. The algorithm implemented via the Armadillo library for linear
 algebra in C++. It also has no dependencies other than base R and (if
 building from source) a C++ compiler.
 
