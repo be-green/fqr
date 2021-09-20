@@ -47,7 +47,7 @@ huber_grad_descent <- function(y, X, X_t, beta, grad, derivs, tau, n, one_over_n
 #' @param warm_start integer indicating whether to "warm up" on a subsample
 #' of the data
 #' @param scale whether to scale x & y variables
-#' @param optional lasso penalty weight
+#' @param lambda optional lasso penalty weight
 #' @param min_delta smallest allowed step size for gradient descent
 #' @export
 fit_approx_quantile_model <- function(X, y, X_sub, y_sub, tau, init_beta, mu = 1e-15, maxiter = 100000L, beta_tol = 1e-4, check_tol = 1e-6, intercept = 1L, num_samples = 1000, warm_start = 1L, scale = 1L, lambda = 0, min_delta = 1e-10) {

@@ -227,7 +227,7 @@ arma::vec huber_grad_descent(const arma::colvec& y, const arma::mat& X,
 //' @param warm_start integer indicating whether to "warm up" on a subsample
 //' of the data
 //' @param scale whether to scale x & y variables
-//' @param optional lasso penalty weight
+//' @param lambda optional lasso penalty weight
 //' @param min_delta smallest allowed step size for gradient descent
 //' @export
 // [[Rcpp::export]]

@@ -55,9 +55,9 @@ of the data}
 
 \item{scale}{whether to scale x & y variables}
 
-\item{min_delta}{smallest allowed step size for gradient descent}
+\item{lambda}{optional lasso penalty weight}
 
-\item{optional}{lasso penalty weight}
+\item{min_delta}{smallest allowed step size for gradient descent}
 }
 \description{
 Compute quantile regression via accelerated gradient descent using

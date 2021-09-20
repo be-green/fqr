@@ -10,7 +10,7 @@ fit_fqr(
   y,
   tau,
   se = T,
-  init_beta = stats::rnorm(ncol(X)),
+  init_beta = rep(0, ncol(X)),
   smoothing_window = .Machine$double.eps,
   maxiter = 10000,
   beta_tol = 1e-16,

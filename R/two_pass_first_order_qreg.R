@@ -10,6 +10,8 @@
 #' algorithm
 #' @details This function performs smoothed quantile regression w/ post-processing
 #' to ensure accuracy of the approximate first-order method.
+#' @importFrom stats quantile
+#' @importFrom quantreg rq.fit.br
 post_processed_grad_descent = function(X, y,
                                        tau, lambda = 0,
                                        nwarmup_samples = 0.1 * nrow(X),
@@ -43,7 +45,8 @@ post_processed_grad_descent = function(X, y,
                             check_tol = 1e-5,
                             intercept = 1,
                             num_samples = nwarmup_samples,
-                            warm_start = 1, scale = 1, lambda,
+                            warm_start = 1,
+                            scale = 1, lambda,
                             min_delta = 1e-10)
 
   res = as.vector(init_fit$residuals)

@@ -71,7 +71,7 @@ get_intercept <- function(X) {
 #' @importFrom stats cov
 fit_fqr <- function(X, y, tau,
                     se = T,
-                    init_beta = stats::rnorm(ncol(X)),
+                    init_beta = rep(0, ncol(X)),
                     smoothing_window = .Machine$double.eps,
                     maxiter = 10000,
                     beta_tol = 1e-16,
@@ -91,14 +91,14 @@ fit_fqr <- function(X, y, tau,
   X_sub <- X[samples,]
   y_sub <- y[samples]
 
-  coef <- list()
+  model_fits <- list()
   boot_list <- list()
   subsample_size <- min(0.2 * n, 100)
 
   ss_list <- list()
   for(t in 1:length(tau)) {
 
-    coef[[t]] <- fit_approx_quantile_model(X,
+    model_fits[[t]] <- fit_approx_quantile_model(X,
                               y,
                               X_sub,
                               y_sub,
@@ -112,10 +112,11 @@ fit_fqr <- function(X, y, tau,
                               nwarmup_samples,
                               warm_start)
 
+    init_beta = model_fits[[t]]$coefficients
 
     if(se) {
       ss_mat <- matrix(NA, nrow = nsubsamples,
-                       ncol = length(coef[[t]]))
+                       ncol = length(model_fits[[t]]))
       for(i in 1:nsubsamples) {
         ss_rows <- sample(1:n, subsample_size)
 
@@ -124,14 +125,14 @@ fit_fqr <- function(X, y, tau,
                                                 X_sub,
                                                 y_sub,
                                                 tau[t],
-                                                init_beta = coef[[t]],
+                                                init_beta = model_fits[[t]]$coefficients,
                                                 mu = smoothing_window,
                                                 maxiter,
                                                 beta_tol,
                                                 check_tol,
                                                 intercept,
                                                 nwarmup_samples,
-                                                warm_start)
+                                                warm_start)$coefficients
 
 
         ss_list[[t]] <- ss_mat
@@ -142,8 +143,8 @@ fit_fqr <- function(X, y, tau,
 
   }
 
-    coef <- do.call("cbind", args = coef)
-    resid <- y - X %*% coef
+    est_betas <- do.call("cbind", args = lapply(model_fits, coef))
+    res <- do.call("cbind", args = lapply(model_fits, resid))
 
     if(se) {
 
@@ -156,9 +157,9 @@ fit_fqr <- function(X, y, tau,
                                  lapply(vcov_list,
                                         function(x) sqrt(diag(x))))
       structure(list(
-        coefficients = coef,
+        coefficients = est_betas,
         standard_errors = standard_errors,
-        residuals = resid,
+        residuals = res,
         ss_coefs = ss_list,
         ss_percent = ss_percent,
         args = list(
@@ -169,10 +170,10 @@ fit_fqr <- function(X, y, tau,
       ), class = "fqr")
     } else {
       structure(list(
-        coefficients = coef,
-        standard_errors = matrix(NA, ncol = ncol(coef),
-                                 nrow = nrow(coef)),
-        residuals = resid,
+        coefficients = est_betas,
+        standard_errors = matrix(NA, ncol = ncol(est_betas),
+                                 nrow = nrow(est_betas)),
+        residuals = res,
         ss_coefs = NA,
         ss_percent = NA,
         args = list(
@@ -259,7 +260,7 @@ fqr <- function(formula, data, tau = 0.5,
                                 type = "numeric")
   fit = fit_fqr(X = m, y = y,
                 tau = tau, se = se,
-                init_beta = stats::rnorm(ncol(m)),
+                init_beta = rep(0, ncol(m)),
                 smoothing_window = smoothing_window,
                 maxiter = maxiter,
                 beta_tol = beta_tol,
@@ -285,8 +286,28 @@ coef.fqr <- function(object, ...) {
 #' @param object object to get coefficients from
 #' @param ... additional arguments, ignored for now
 #' @importFrom stats coefficients
+#' @export
 coefficients.fqr <- function(object, ...) {
-  coef(fqr)
+  coef(object)
+}
+
+#' Get model residuals
+#' @rdname resid.fqr
+#' @param object object to get coefficients from
+#' @param ... additional arguments, ignored for now
+#' @importFrom stats resid
+#' @export
+resid.fqr <- function(object, ...) {
+  object$residuals
+}
+
+#' @rdname resid.fqr
+#' @param object object to get coefficients from
+#' @param ... additional arguments, ignored for now
+#' @importFrom stats residuals
+#' @export
+residuals.fqr <- function(object, ...) {
+  object$residuals
 }
 
 #' Print fast quantile regression
