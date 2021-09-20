@@ -237,86 +237,19 @@ an integer which controls whether that happens at all
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'>
 <span class='va'>fit</span> <span class='op'>&lt;-</span> <span class='fu'>fqr</span><span class='op'>(</span><span class='va'>area</span> <span class='op'>~</span> <span class='va'>peri</span>, data <span class='op'>=</span> <span class='va'>rock</span>, tau <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>0.25</span>, <span class='fl'>0.5</span>, <span class='fl'>0.75</span><span class='op'>)</span><span class='op'>)</span>
-
+</div><div class='output co'>#&gt; <span class='error'>Error in fit_approx_quantile_model(X[ss_rows, ], y[ss_rows], X_sub, y_sub,     tau[t], init_beta = coef[[t]], mu = smoothing_window, maxiter,     beta_tol, check_tol, intercept, nwarmup_samples, warm_start): Not compatible with requested type: [type=list; target=double].</span></div><div class='input'>
 <span class='co'># print coefficients &amp; SEs</span>
 <span class='fu'><a href='https://rdrr.io/r/base/print.html'>print</a></span><span class='op'>(</span><span class='va'>fit</span><span class='op'>)</span>
-</div><div class='output co'>#&gt; Tau:  0.25 
-#&gt;              Coefficient           SE
-#&gt; (Intercept) 5.213727e+03 498.40343227
-#&gt; peri        4.156585e-02   0.01486405
-#&gt; Tau:  0.5 
-#&gt;              Coefficient           SE
-#&gt; (Intercept) 7.420291e+03 4.085429e+02
-#&gt; peri        2.489165e-02 6.189918e-03
-#&gt; Tau:  0.75 
-#&gt;              Coefficient           SE
-#&gt; (Intercept) 8.824772e+03 3.911653e+02
-#&gt; peri        1.668214e-02 5.178325e-03</div><div class='input'>
+</div><div class='output co'>#&gt; <span class='error'>Error in print(fit): object 'fit' not found</span></div><div class='input'>
 <span class='co'># grab coefficient vector</span>
 <span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span><span class='op'>(</span><span class='va'>fit</span><span class='op'>)</span>
-</div><div class='output co'>#&gt;              [,1]         [,2]         [,3]
-#&gt; [1,] 5.213727e+03 7.420291e+03 8.824772e+03
-#&gt; [2,] 4.156585e-02 2.489165e-02 1.668214e-02</div><div class='input'>
+</div><div class='output co'>#&gt; <span class='error'>Error in coef(fit): object 'fit' not found</span></div><div class='input'>
 <span class='co'># predict values</span>
 <span class='fu'><a href='https://rdrr.io/r/stats/predict.html'>predict</a></span><span class='op'>(</span><span class='va'>fit</span><span class='op'>)</span>
-</div><div class='output co'>#&gt;        [,1]     [,2]     [,3]
-#&gt; 1  5329.775 7489.786 8871.346
-#&gt; 2  5375.526 7517.184 8889.708
-#&gt; 3  5377.108 7518.131 8890.343
-#&gt; 4  5374.559 7516.604 8889.320
-#&gt; 5  5377.852 7518.576 8890.642
-#&gt; 6  5380.413 7520.110 8891.669
-#&gt; 7  5394.362 7528.463 8897.268
-#&gt; 8  5394.320 7528.439 8897.251
-#&gt; 9  5366.774 7511.943 8886.196
-#&gt; 10 5342.525 7497.421 8876.464
-#&gt; 11 5399.944 7531.806 8899.508
-#&gt; 12 5379.419 7519.515 8891.271
-#&gt; 13 5381.509 7520.767 8892.110
-#&gt; 14 5359.958 7507.860 8883.460
-#&gt; 15 5379.964 7519.841 8891.490
-#&gt; 16 5364.573 7510.624 8885.312
-#&gt; 17 5405.290 7535.008 8901.654
-#&gt; 18 5412.729 7539.462 8904.639
-#&gt; 19 5415.913 7541.369 8905.917
-#&gt; 20 5399.918 7531.790 8899.498
-#&gt; 21 5356.246 7505.638 8881.970
-#&gt; 22 5394.669 7528.647 8897.391
-#&gt; 23 5408.989 7537.223 8903.138
-#&gt; 24 5359.974 7507.870 8883.467
-#&gt; 25 5295.919 7469.511 8857.759
-#&gt; 26 5271.061 7454.625 8847.782
-#&gt; 27 5293.377 7467.989 8856.739
-#&gt; 28 5279.627 7459.754 8851.220
-#&gt; 29 5290.674 7466.370 8855.654
-#&gt; 30 5265.255 7451.148 8845.452
-#&gt; 31 5285.559 7463.307 8853.601
-#&gt; 32 5274.457 7456.659 8849.145
-#&gt; 33 5273.032 7455.805 8848.573
-#&gt; 34 5254.894 7444.943 8841.293
-#&gt; 35 5269.873 7453.913 8847.305
-#&gt; 36 5274.457 7456.659 8849.145
-#&gt; 37 5270.951 7454.559 8847.738
-#&gt; 38 5233.526 7432.147 8832.718
-#&gt; 39 5263.168 7449.898 8844.614
-#&gt; 40 5282.101 7461.236 8852.213
-#&gt; 41 5252.863 7443.727 8840.479
-#&gt; 42 5226.556 7427.973 8829.920
-#&gt; 43 5261.349 7448.809 8843.884
-#&gt; 44 5308.518 7477.056 8862.815
-#&gt; 45 5262.530 7449.516 8844.358
-#&gt; 46 5238.576 7435.171 8834.744
-#&gt; 47 5274.242 7456.530 8849.059
-#&gt; 48 5275.477 7457.269 8849.554</div><div class='input'>
+</div><div class='output co'>#&gt; <span class='error'>Error in predict(fit): object 'fit' not found</span></div><div class='input'>
 <span class='co'># predict values with new data</span>
 <span class='fu'><a href='https://rdrr.io/r/stats/predict.html'>predict</a></span><span class='op'>(</span><span class='va'>fit</span>, newdata <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span><span class='op'>(</span><span class='va'>rock</span><span class='op'>)</span><span class='op'>)</span>
-</div><div class='output co'>#&gt;       [,1]     [,2]     [,3]
-#&gt; 1 5329.775 7489.786 8871.346
-#&gt; 2 5375.526 7517.184 8889.708
-#&gt; 3 5377.108 7518.131 8890.343
-#&gt; 4 5374.559 7516.604 8889.320
-#&gt; 5 5377.852 7518.576 8890.642
-#&gt; 6 5380.413 7520.110 8891.669</div></pre>
+</div><div class='output co'>#&gt; <span class='error'>Error in predict(fit, newdata = head(rock)): object 'fit' not found</span></div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

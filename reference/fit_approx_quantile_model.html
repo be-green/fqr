@@ -125,12 +125,15 @@ Huber approximation, warm start based on data subset</p>
   <span class='va'>tau</span>,
   <span class='va'>init_beta</span>,
   mu <span class='op'>=</span> <span class='fl'>1e-15</span>,
-  maxiter <span class='op'>=</span> <span class='fl'>10000L</span>,
+  maxiter <span class='op'>=</span> <span class='fl'>100000L</span>,
   beta_tol <span class='op'>=</span> <span class='fl'>1e-04</span>,
   check_tol <span class='op'>=</span> <span class='fl'>1e-06</span>,
   intercept <span class='op'>=</span> <span class='fl'>1L</span>,
   num_samples <span class='op'>=</span> <span class='fl'>1000</span>,
-  warm_start <span class='op'>=</span> <span class='fl'>1L</span>
+  warm_start <span class='op'>=</span> <span class='fl'>1L</span>,
+  scale <span class='op'>=</span> <span class='fl'>1L</span>,
+  lambda <span class='op'>=</span> <span class='fl'>0</span>,
+  min_delta <span class='op'>=</span> <span class='fl'>1e-10</span>
 <span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
@@ -189,6 +192,18 @@ for early stopping</p></td>
       <th>warm_start</th>
       <td><p>integer indicating whether to "warm up" on a subsample
 of the data</p></td>
+    </tr>
+    <tr>
+      <th>scale</th>
+      <td><p>whether to scale x &amp; y variables</p></td>
+    </tr>
+    <tr>
+      <th>min_delta</th>
+      <td><p>smallest allowed step size for gradient descent</p></td>
+    </tr>
+    <tr>
+      <th>optional</th>
+      <td><p>lasso penalty weight</p></td>
     </tr>
     </table>
 
