@@ -1,8 +1,19 @@
 
+#' Smoothed Quantile Regression with Post-Processing
+#' @param X design matrix
+#' @param y outcome variable
+#' @param tau target quantile
+#' @param lambda optional weight on penalty function
+#' @param nwarmup_samples number of samples to use for warmup in approximat
+#' quantile regression
+#' @param lp_size size of linear programming problem passed to the simplex
+#' algorithm
+#' @details This function performs smoothed quantile regression w/ post-processing
+#' to ensure accuracy of the approximate first-order method.
 post_processed_grad_descent = function(X, y,
-                                       tau, lambda,
+                                       tau, lambda = 0,
                                        nwarmup_samples = 0.1 * nrow(X),
-                                       lp_size = 50000) {
+                                       lp_size = 10000) {
   n <- nrow(X)
   p <- ncol(X)
 

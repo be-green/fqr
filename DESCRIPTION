@@ -15,7 +15,8 @@ LinkingTo:
     RcppParallel
 Imports: 
     RcppParallel,
-    Rcpp
+    Rcpp,
+    quantreg
 Suggests: 
     knitr,
     covr,
