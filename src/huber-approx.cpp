@@ -46,7 +46,7 @@ struct SumCheckFun : public RcppParallel::Worker
                              [&](double x, double y) {return x + checkfun(y, tau);});
   }
 
-  // join my value with that of another SumCheckFun
+  // join avg_y value with that of another SumCheckFun
   void join(const SumCheckFun& rhs) {
     value += rhs.value;
   }
@@ -111,9 +111,9 @@ void update_huber_grad(const arma::mat& X_t,
 }
 
 // [[Rcpp::export]]
-void z_score(arma::mat& X, const arma::rowvec& mx, const arma::vec& sx, const int p) {
+void z_score(arma::mat& X, const arma::rowvec& colwise_avg_x, const arma::vec& colwise_sd_x, const int p) {
   for (int i = 0; i < p; i++) {
-    X.col(i) = (X.col(i) - mx(i)) / sx(i);
+    X.col(i) = (X.col(i) - colwise_avg_x(i)) / colwise_sd_x(i);
   }
 }
 
@@ -123,7 +123,8 @@ arma::vec huber_grad_descent(const arma::colvec& y, const arma::mat& X,
                              arma::vec& grad, arma::vec& derivs,
                              double tau, double n, double one_over_n,
                              int p, int maxiter, double mu,
-                             double beta_tol, double check_tol) {
+                             double beta_tol, double check_tol,
+                             double min_delta = 1e-10) {
 
 
   // gradient vector
@@ -140,6 +141,8 @@ arma::vec huber_grad_descent(const arma::colvec& y, const arma::mat& X,
   arma::vec grad_diff(p);
 
   // hyperparams for backtracking line search
+  // idk how to optimize these but for now they are pretty
+  // arbitrary
   double c = 0.5;
   double reduction_factor = 0.8;
 
@@ -153,11 +156,11 @@ arma::vec huber_grad_descent(const arma::colvec& y, const arma::mat& X,
   double i = 1;
   double init_delta = 1 / std::max(tau, 1 - tau);
   double delta = init_delta;
+  int exitflag = 0;
 
   // inf is the "max" norm over the vector
   while((i < maxiter) && ((arma::norm(grad, "inf") > beta_tol) || (i == 1)) &&
-        abs(loss_diff / delta) > check_tol ) {
-
+        abs(loss_diff / delta) > check_tol && exitflag == 0) {
 
     if(std::fmod(i, 100) == 0) {
       Rcpp::checkUserInterrupt();
@@ -180,10 +183,13 @@ arma::vec huber_grad_descent(const arma::colvec& y, const arma::mat& X,
     loss_diff = last_loss - loss;
     t = sum(c * grad);
 
-    // if we don't reduce enough, make step size smaller
-    while(loss_diff < delta * t)  {
-
+    // if we don't reduce loss function enough, make step size smaller
+    while(loss_diff < delta * t && exitflag == 0)  {
       Rcpp::checkUserInterrupt();
+
+      if(delta < min_delta) {
+        exitflag = 1;
+      }
 
       beta -= delta * grad;
       delta *= reduction_factor;
@@ -200,7 +206,6 @@ arma::vec huber_grad_descent(const arma::colvec& y, const arma::mat& X,
     last_loss = loss;
     i++;
   }
-  //Rcpp::Rcout << "Num Iterations: " << i <<"\n";
   return beta;
 }
 
@@ -223,9 +228,10 @@ arma::vec huber_grad_descent(const arma::colvec& y, const arma::mat& X,
 //' of the data
 //' @param scale whether to scale x & y variables
 //' @param optional lasso penalty weight
+//' @param min_delta smallest allowed step size for gradient descent
 //' @export
 // [[Rcpp::export]]
-arma::vec fit_approx_quantile_model(arma::mat& X,
+Rcpp::List fit_approx_quantile_model(arma::mat& X,
                                     arma::vec& y,
                                     arma::mat& X_sub,
                                     arma::vec& y_sub,
@@ -239,7 +245,8 @@ arma::vec fit_approx_quantile_model(arma::mat& X,
                                     double num_samples = 1000,
                                     int warm_start = 1,
                                     int scale = 1,
-                                    double lambda = 0) {
+                                    double lambda = 0,
+                                    double min_delta = 1e-10) {
 
   // p is dim, n is obs, one_over_n to avoid repeated calcs
   int p = X.n_cols;
@@ -249,10 +256,10 @@ arma::vec fit_approx_quantile_model(arma::mat& X,
   // calc'd here because we use it a bunch
   double one_over_n = 1/n;
 
-  arma::rowvec mx;
-  arma::vec sx;
-  double my;
-  double sy;
+  arma::rowvec colwise_avg_x;
+  arma::vec colwise_sd_x;
+  double avg_y;
+  double sd_y;
 
   if(scale == 1) {
 
@@ -268,24 +275,24 @@ arma::vec fit_approx_quantile_model(arma::mat& X,
 
     // standardizing everything to work w/ z scores
     // we will transform betas back at the end
-    mx = arma::mean(X, 0);
-    sx = arma::stddev(X, 0, 0).t();
+    colwise_avg_x = arma::mean(X, 0);
+    colwise_sd_x = arma::stddev(X, 0, 0).t();
 
     // standardize X
     for (int i = 0; i < X.n_cols; i++) {
-      X.col(i) = (X.col(i) - mx(i)) / sx(i);
+      X.col(i) = (X.col(i) - colwise_avg_x(i)) / colwise_sd_x(i);
 
       if(warm_start == 1) {
-        X_sub.col(i) = (X_sub.col(i) - mx(i)) / sx(i);
+        X_sub.col(i) = (X_sub.col(i) - colwise_avg_x(i)) / colwise_sd_x(i);
       }
     }
 
-    my = arma::mean(y);
-    sy = arma::stddev(y);
+    avg_y = arma::mean(y);
+    sd_y = arma::stddev(y);
     if(intercept > 0) {
-      y -= my;
+      y -= avg_y;
       if(warm_start == 1) {
-        y_sub -= my;
+        y_sub -= avg_y;
       }
     }
   }
@@ -300,7 +307,7 @@ arma::vec fit_approx_quantile_model(arma::mat& X,
     }
   }
 
-  if (lambda > 1e-4) {
+  if (lambda > 1e-8) {
     lambda = lambda;
     arma::mat R(X.n_cols, X.n_cols, arma::fill::zeros);
     R.diag() += lambda;
@@ -309,14 +316,23 @@ arma::vec fit_approx_quantile_model(arma::mat& X,
     arma::vec r(p);
     r.zeros();
 
+    // add positive component of lasso penalty
     X = arma::join_vert(X, R * n);
     y = arma::join_vert(y, r);
+
+    // add negative component of lasso penalty
+    X = arma::join_vert(X, R * -n);
+    y = arma::join_vert(y, r);
+
     X_sub = arma::join_vert(X_sub, R * num_samples);
     y_sub = arma::join_vert(y_sub, r);
 
-    num_samples += r.n_rows;
+    X_sub = arma::join_vert(X_sub, R * -num_samples);
+    y_sub = arma::join_vert(y_sub, r);
 
-    n = n + R.n_rows;
+    num_samples += r.n_rows * 2;
+
+    n = n + R.n_rows * 2;
   }
 
   // pre-transposed X
@@ -336,7 +352,6 @@ arma::vec fit_approx_quantile_model(arma::mat& X,
     arma::vec derivs(num_samples);
     derivs.zeros();
 
-
     init_beta = huber_grad_descent(y_sub,
                                    X_sub,
                                    X_t_sub,
@@ -345,10 +360,9 @@ arma::vec fit_approx_quantile_model(arma::mat& X,
                                    tau, num_samples,
                                    one_over_num_samples, p,
                                    5, mu,
-                                   beta_tol, check_tol);
+                                   beta_tol, check_tol, min_delta);
 
   }
-
 
 
   init_beta(0) = arma::as_scalar(arma::quantile(y - X.cols(1, p - 1) * init_beta.rows(1, p - 1),
@@ -364,10 +378,10 @@ arma::vec fit_approx_quantile_model(arma::mat& X,
                                       grad, derivs,
                                       tau, n, one_over_n, p,
                                       maxiter, mu,
-                                      beta_tol, check_tol);
+                                      beta_tol, check_tol,min_delta);
 
-  if(lambda > 0.0) {
-    n = n - (p - 1);
+  if(lambda > 1e-8) {
+    n = n - (2 * p);
     X = X.rows(arma::span(0, n - 1));
     y = y.rows(arma::span(0, n - 1));
   }
@@ -375,28 +389,30 @@ arma::vec fit_approx_quantile_model(arma::mat& X,
   if(scale == 1) {
 
     // unstandardize
-    y += my;
+    y += avg_y;
     double m;
     double s;
 
     // unstandardize coefficients
     if(intercept > 0) {
+
       for (int i = 1; i < X.n_cols; i++) {
-        m = mx(i - 1);
-        s = sx(i - 1);
+        m = colwise_avg_x(i - 1);
+        s = colwise_sd_x(i - 1);
         X.col(i) = (X.col(i) + m) * s;
       }
-      beta.rows(1, p - 1) /= sx;
-      beta(0) += my - arma::as_scalar(mx * beta.rows(1, p - 1));
+      beta.rows(1, p - 1) /= colwise_sd_x;
+      beta(0) += avg_y - arma::as_scalar(colwise_avg_x * beta.rows(1, p - 1));
+
     } else {
 
       for (int i = 0; i < p; i++) {
-        m = mx(i);
-        s = sx(i);
+        m = colwise_avg_x(i);
+        s = colwise_sd_x(i);
         X.col(i) = (X.col(i) + m) * s;
       }
 
-      beta.rows(0, p - 1) /= sx;
+      beta.rows(0, p - 1) /= colwise_sd_x;
     }
     // if the intercept column of X isn't the first column,
     // re-order the coefficients
@@ -406,7 +422,13 @@ arma::vec fit_approx_quantile_model(arma::mat& X,
       beta.shed_row(0);
     }
   }
-  return(beta);
+
+  arma::vec fitted_vals = X * beta;
+  return(Rcpp::List::create(
+      Rcpp::Named("coefficients") = beta,
+      Rcpp::Named("residuals") = y - fitted_vals,
+      Rcpp::Named("fitted") = fitted_vals
+      ));
 }
 
 //' Compute quantile regression via accelerated gradient descent using
@@ -452,10 +474,10 @@ arma::vec fit_penalize_approx_quantile_model(arma::mat& X,
   // calc'd here because we use it a bunch
   double one_over_n = 1/n;
 
-  arma::rowvec mx;
-  arma::vec sx;
-  double my;
-  double sy;
+  arma::rowvec colwise_avg_x;
+  arma::vec colwise_sd_x;
+  double avg_y;
+  double sd_y;
 
   if(scale == 1) {
 
@@ -471,24 +493,24 @@ arma::vec fit_penalize_approx_quantile_model(arma::mat& X,
 
     // standardizing everything to work w/ z scores
     // we will transform betas back at the end
-    mx = arma::mean(X, 0);
-    sx = arma::stddev(X, 0, 0).t();
+    colwise_avg_x = arma::mean(X, 0);
+    colwise_sd_x = arma::stddev(X, 0, 0).t();
 
     // standardize X
     for (int i = 0; i < X.n_cols; i++) {
-      X.col(i) = (X.col(i) - mx(i)) / sx(i);
+      X.col(i) = (X.col(i) - colwise_avg_x(i)) / colwise_sd_x(i);
 
       if(warm_start == 1) {
-        X_sub.col(i) = (X_sub.col(i) - mx(i)) / sx(i);
+        X_sub.col(i) = (X_sub.col(i) - colwise_avg_x(i)) / colwise_sd_x(i);
       }
     }
 
-    my = arma::mean(y);
-    sy = arma::stddev(y);
+    avg_y = arma::mean(y);
+    sd_y = arma::stddev(y);
     if(intercept > 0) {
-      y -= my;
+      y -= avg_y;
       if(warm_start == 1) {
-        y_sub -= my;
+        y_sub -= avg_y;
       }
     }
   }
@@ -552,28 +574,28 @@ arma::vec fit_penalize_approx_quantile_model(arma::mat& X,
   if(scale == 1) {
 
     // unstandardize
-    y += my;
+    y += avg_y;
     double m;
     double s;
 
     // unstandardize coefficients
     if(intercept > 0) {
       for (int i = 1; i < X.n_cols; i++) {
-        m = mx(i - 1);
-        s = sx(i - 1);
+        m = colwise_avg_x(i - 1);
+        s = colwise_sd_x(i - 1);
         X.col(i) = (X.col(i) + m) * s;
       }
-      beta.rows(1, p - 1) /= sx;
-      beta(0) += my - arma::as_scalar(mx * beta.rows(1, p - 1));
+      beta.rows(1, p - 1) /= colwise_sd_x;
+      beta(0) += avg_y - arma::as_scalar(colwise_avg_x * beta.rows(1, p - 1));
     } else {
 
       for (int i = 0; i < p; i++) {
-        m = mx(i);
-        s = sx(i);
+        m = colwise_avg_x(i);
+        s = colwise_sd_x(i);
         X.col(i) = (X.col(i) + m) * s;
       }
 
-      beta.rows(0, p - 1) /= sx;
+      beta.rows(0, p - 1) /= colwise_sd_x;
     }
     // if the intercept column of X isn't the first column,
     // re-order the coefficients

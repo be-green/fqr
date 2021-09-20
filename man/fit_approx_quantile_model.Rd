@@ -20,7 +20,8 @@ fit_approx_quantile_model(
   num_samples = 1000,
   warm_start = 1L,
   scale = 1L,
-  lambda = 0
+  lambda = 0,
+  min_delta = 1e-10
 )
 }
 \arguments{
@@ -53,6 +54,8 @@ for early stopping}
 of the data}
 
 \item{scale}{whether to scale x & y variables}
+
+\item{min_delta}{smallest allowed step size for gradient descent}
 
 \item{optional}{lasso penalty weight}
 }
