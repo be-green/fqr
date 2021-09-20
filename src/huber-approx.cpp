@@ -308,7 +308,6 @@ Rcpp::List fit_approx_quantile_model(arma::mat& X,
   }
 
   if (lambda > 1e-8) {
-    lambda = lambda;
     arma::mat R(X.n_cols, X.n_cols, arma::fill::zeros);
     R.diag() += lambda;
 
