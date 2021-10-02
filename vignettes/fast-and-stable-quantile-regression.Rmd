@@ -1,0 +1,176 @@
+---
+title: "A Simple Method for Fast and Accurate Quantile Regression"
+output: rmarkdown::html_vignette
+bibliography: fqr.bib
+vignette: >
+  %\VignetteIndexEntry{fast-and-stable-quantile-regression}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+# Abstract
+
+Quantile regression is one of the most powerful statistical tools for studying conditional distributions. However, for large N problems, traditional linear programming tools are extremely slow. On the other hand first-order methods like semi-smooth and proximal gradient descent, and methods with similar convergence speed like ADMM, quickly come within a few digit accuracy, but have difficulty matching the precision of linear programming approaches. I address both of these problems, using a technique which first comes to an approximate solution, collapses the data into an efficient representation, and post-processes with linear programming approaches. This method converges to an exact answer quickly for large problems and can be easily applied to any first-order quantile regression method.
+
+# Introduction
+
+Quantile regression is a fantastic tool for understanding richer information than simple averages. Rather than minimizing a least squares loss, quantile regression conveys the conditional quantile $\tau$ by targeting
+
+$$\min_{b\in\mathbb{R}^p} \sum_{i \in N} \rho(y - x^Tb)$$
+
+where for a given $\tau$, 
+
+$$\rho(r) = r(\tau - I(r > 0))$$
+and $I$ is the indicator function.
+
+However, for large problems existing methods for quantile regression are computationally infeasible. Traditional methods for minimizing this loss function involve formulating the problem as a linear program, and leveraging techniques from that literature such as those involving simplex representations [@barrodale1973improved] and interior point methods [@portnoy1997gaussian]. These are very efficient for small and medium scale problems, but are slow for problems with large numbers of observations.
+
+There is increasing interest in using quantile regression with big N. For example, many economists are interested in studying income inequality with administrative data, but the computational tools which scale well with sample size can take a long time to achieve a high degree of accuracy. When trying to predict future outcomes with a linear quantile regression model, error in the individual coefficients is less important than the level of error in the predicted values. However, for inferential purposes the reverse can be true.
+
+@koenker2017handbook summarizes this nicely:
+
+> In some applications it can be easily disregarded since decisions based on such data analysis only require a couple of digits accuracy. Nevertheless, it is somewhat disconcerting in view of our usual obsessions with rates of convergence of statistical procedures.
+
+In reported numerical experiments, using the alternating directional method of multipliers (ADMM) took 120,002 iterations to achieve 4-digit accuracy of its solution, but only took 1,421 iterations to achieve 2-digit accuracy.
+
+To make matters worse, for joint models of quantiles which avoid crossings, as in @schmidt2016quantile, error in one quantile is be carried over into the next, and small instabilities are magnified exponentially when estimating the "spacings" away from an estimated median. 
+
+For variable selection, data-augmentation approaches to implementing a lasso penalty for quantile regression, such as those proposed in @belloni2011l1, rely on the solution sitting at a vertex of the linear program, mimicking the sharp geometry of the L1 penalty. Prominent implementations of the lasso penalty for quantile regression leverage this approach, for example in the quantreg [@koenker2018package] and rqPen [@sherwood2020package] R packages.
+
+The key observation in this paper is quite simple, and is based on work by @portnoy1997gaussian. The quantile regression loss function depends on whether the residuals of the predicted values change sign. Suppose we were estimating the conditional median. @koenker_2005 notes that if we "knew" that a certain subset $J_h$ of the observations fall above the optimal plane, and another $J_l$ were below the optimal plane, we could collapse them into single observations such that $x_L = \sum_{i \in J_L} x_i$, $y_L = \sum_{i \in J_L} y_i$, defining $x_H$ and $y_h$ similarly. Then we can estimate the revised problem:
+
+$$\min_{b\in\mathbb{R}^p} \sum_{i \in N \ J_L \cup L_h} | y_i - x_i^T b | + |y_L - x_L^T b| + |y_H - x_H^T b|$$
+
+Thus, if we have a high-quality guess of the true values for $b$, we can identify a large number of observations whose residuals are not going to change sign when we move from $b_{guess}$ to $b^*$.
+
+This shrinks the effect $N$ of the problem by $2J - 2$. In the vast majority of cases, 2 or 3 digit accuracy is enough to shrink the data enough for interior or exterior point methods to solve the problem quickly, getting an accurate solution in a few fast iterations.
+
+There has been substantial recent growth in first-order, proximal, and smoothing-based methods for quantile regression including using ADMM [@yu2017parallel], smooth approximations of the loss function [@he2021smoothed], proximal gradient descent [reference I can't find right now], and smoothed Newton coordinate-descent [@yi2017semismooth]. These are substantially faster than interior point methods for large $N$ and $P$ because they do not require repeated cholesky factorization, which becomes slow with large numbers of observations.
+
+This method can be applied to _any_ solution method that comes within an $\espilon$-ball of the optimal loss function, and can be used to post-process any of these approaches.
+
+# The Algorithm
+
+
+
+# Numerical Experiments
+
+```{r conquer_comparison, eval = F}
+set.seed(42)
+library(quantreg)
+library(data.table)
+library(magrittr)
+
+# quantiles to evaluate
+taus = seq(0.1, 0.9, by = 0.1)
+
+# number of observations
+n = 10000
+
+# number of dimensions (except intercept)
+p = 50
+
+# 100 times for comparisons
+nreps = 50
+
+replist = list()
+errlist = list()
+
+error_funs = list(
+  t_err = function(n) rt(n, 1.5),
+  norm_err = rnorm,
+  lognorm_err = function(n) exp(rnorm(n)),
+  asym_err = function(n) {
+    init = rnorm(n)
+    init[which(init > 0)] = initwhich(init >0) * 4
+    init[which(init < 1)] = init[which(init < 1)] * 0.2
+  }
+)
+
+for(e in 1:length(error_funs)) {
+  
+  err = error_funs[[e]]
+  for(j in 1:nreps) {
+  fitlist = list()
+  
+  # sim standard normals
+  x = matrix(rnorm(n = n * p), ncol = p, nrow = n)
+  x = cbind(1, x)
+  
+  # sim standard normal betas
+  beta = rnorm(ncol(x))
+  
+  y = x %*% beta + err(n)
+  
+  for (i in 1:length(taus)) {
+    tau = taus[i]
+    cnq_fit = rq.fit.conquer(x, y, tau)
+    simplex_fit = rq.fit.br(x, y, tau)
+    fitlist[[i]] = list(
+      conquer_fit = cnq_fit,
+      simplex_fit = simplex_fit
+    )
+  }
+    
+  replist[[j]] = list(
+    x = x,
+    y = y,
+    beta = beta,
+    fits = fitlist
+  )
+}
+
+replist = lapply(replist, function(x) {
+    names(x$fits) = taus
+    x
+    })
+
+
+errlist[[e]] <- replist
+
+}
+
+names(errlist) = c("T Distributed, 1.5 df", "Normal", "LogNormal", "Asymmetric")
+dt = lapply(errlist, function(e) {
+  df = lapply(e, function(y) {
+  dt = lapply(y$fits, function(x) {
+    data.table(MaxDiff = max(abs(coef(x$conquer_fit) - 
+                                 coef(x$simplex_fit))))
+  }) %>% 
+    rbindlist(idcol = T)
+  setnames(dt, ".id", "tau")
+}) %>% 
+  rbindlist(idcol = T)
+  setnames(df, ".id", "rep")
+}) %>% 
+  rbindlist(idcol = T)
+setnames(dt, ".id", "Error Type")
+
+
+
+library(ggplot2)
+
+ggplot(dt, aes(x = tau, y = MaxDiff, color = `Error Type`)) +
+  geom_jitter() +
+  ggtitle("Largest Differences from Simplex Solution",
+          subtitle = "From 50 simulations for each quantile, for each error distribution\np=50, n=10,000, coefficients & X variables drawn from N(0, 1)") +
+  theme_minimal() +
+  ylab("Maximum Difference in Magnitude") +
+  xlab("Target Quantile")
+```
+
+## Convergence Speed and Accuracy
+
+## Stabilizing the Lasso
+
+# Empirical Implementation
+
+
+# Conclusions
+
+# References
+

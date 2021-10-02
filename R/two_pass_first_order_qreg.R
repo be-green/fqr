@@ -1,4 +1,3 @@
-
 #' Smoothed Quantile Regression with Post-Processing
 #' @param X design matrix
 #' @param y outcome variable
@@ -8,8 +7,6 @@
 #' quantile regression
 #' @param lp_size size of linear programming problem passed to the simplex
 #' algorithm
-#' @details This function performs smoothed quantile regression w/ post-processing
-#' to ensure accuracy of the approximate first-order method.
 #' @importFrom stats quantile
 #' @importFrom quantreg rq.fit.br
 post_processed_grad_descent = function(X, y,
@@ -21,6 +18,10 @@ post_processed_grad_descent = function(X, y,
 
   if(nwarmup_samples > n) {
     nwarmup_samples <- min(n, nwarmup_samples/10)
+  }
+  if(n < lp_size) {
+    new_fit = quantreg::rq.fit.br(X, y, tau)
+    return(coef(new_fit))
   }
 
   if(nwarmup_samples < p) {
@@ -47,7 +48,7 @@ post_processed_grad_descent = function(X, y,
                             num_samples = nwarmup_samples,
                             warm_start = 1,
                             scale = 1, lambda,
-                            min_delta = 1e-10)
+                            min_delta = 1e-5)
 
   res = as.vector(init_fit$residuals)
   checked_res = check(res, tau)

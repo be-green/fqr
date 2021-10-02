@@ -65,6 +65,7 @@ get_intercept <- function(X) {
 #' @param warm_start whether to run initial warmup regression or just
 #' default inits for full data gradient descent
 #' @param maxiter maximum number of allowed iterations for gradient descent
+#' @param labmda lasso penalty parameter for penalized regression
 #' @export
 #' @importFrom stats model.matrix
 #' @importFrom stats rnorm
@@ -72,47 +73,36 @@ get_intercept <- function(X) {
 fit_fqr <- function(X, y, tau,
                     se = T,
                     init_beta = rep(0, ncol(X)),
-                    smoothing_window = .Machine$double.eps,
-                    maxiter = 10000,
-                    beta_tol = 1e-16,
-                    check_tol = 1e-15 * nrow(X),
                     intercept = 1,
-                    nsubsamples = 1000,
-                    nwarmup_samples = 1000,
-                    warm_start = 1) {
+                    nsubsamples = 100,
+                    nwarmup_samples = max(0.1 * nrow(X), 100),
+                    lambda = 0,
+                    warm_start = 1,
+                    lp_size = 1000) {
 
   n <- nrow(X)
   if(nwarmup_samples > n) {
     nwarmup_samples <- min(n, nwarmup_samples/10)
   }
-
-  samples <- sample(1:n, nwarmup_samples, replace = F)
-
-  X_sub <- X[samples,]
-  y_sub <- y[samples]
+  if(lp_size > n) {
+    lp_size <- min(n, lp_size/10)
+  }
 
   model_fits <- list()
   boot_list <- list()
-  subsample_size <- min(0.2 * n, 100)
+
+  # if it's too small we just bootstrap
+  subsample_size <- min(min(0.2 * n, 100), n)
 
   ss_list <- list()
   for(t in 1:length(tau)) {
 
-    model_fits[[t]] <- fit_approx_quantile_model(X,
-                              y,
-                              X_sub,
-                              y_sub,
-                              tau[t],
-                              init_beta,
-                              mu = smoothing_window,
-                              maxiter,
-                              beta_tol,
-                              check_tol,
-                              intercept,
-                              nwarmup_samples,
-                              warm_start)
+    model_fits[[t]] <- post_processed_grad_descent(X, y,
+                                tau, lambda = lambda,
+                                nwarmup_samples = nwarmup_samples,
+                                lp_size = lp_size)
 
-    init_beta = model_fits[[t]]$coefficients
+    init_beta = model_fits[[t]]
 
     if(se) {
       ss_mat <- matrix(NA, nrow = nsubsamples,
@@ -120,20 +110,10 @@ fit_fqr <- function(X, y, tau,
       for(i in 1:nsubsamples) {
         ss_rows <- sample(1:n, subsample_size)
 
-        ss_mat[i,] <- fit_approx_quantile_model(X[ss_rows,],
-                                                y[ss_rows],
-                                                X_sub,
-                                                y_sub,
-                                                tau[t],
-                                                init_beta = model_fits[[t]]$coefficients,
-                                                mu = smoothing_window,
-                                                maxiter,
-                                                beta_tol,
-                                                check_tol,
-                                                intercept,
-                                                nwarmup_samples,
-                                                warm_start)$coefficients
-
+        ss_mat[i,] <- post_processed_grad_descent(X[ss_rows,], y[ss_rows],
+                                                  tau, lambda = lambda,
+                                                  nwarmup_samples = nwarmup_samples,
+                                                  lp_size = lp_size)
 
         ss_list[[t]] <- ss_mat
       }
@@ -143,8 +123,8 @@ fit_fqr <- function(X, y, tau,
 
   }
 
-    est_betas <- do.call("cbind", args = lapply(model_fits, coef))
-    res <- do.call("cbind", args = lapply(model_fits, resid))
+    est_betas <- do.call("cbind", model_fits)
+    res <- do.call("cbind", args = lapply(model_fits, function(b) y - X %*% b))
 
     if(se) {
 
@@ -194,10 +174,6 @@ fit_fqr <- function(X, y, tau,
 #' (optional, default is random normal initial values)
 #' @param smoothing_window neighborhood around 0 to smooth with
 #' tilted least-squares loss function
-#' @param beta_tol stopping criterion based on largest value of the
-#' gradient
-#' @param check_tol stopping criterion based on the change in the
-#' value of the check function between iterations
 #' @param intercept what column the intercept is, defaults to 1, 0 to indicate
 #' no intercept
 #' @param nwarmup_samples number of samples to use for warmup regression
@@ -247,13 +223,9 @@ fit_fqr <- function(X, y, tau,
 #' predict(fit, newdata = head(rock))
 fqr <- function(formula, data, tau = 0.5,
                 se = T,
-                smoothing_window = .Machine$double.eps,
-                maxiter = 10000,
-                beta_tol = 1e-16,
-                check_tol = 1e-15 * nrow(data),
-                nwarmup_samples = 1000,
+                nwarmup_samples = pmin(pmax(100, 0.1 * nrow(data)), nrow(data)),
                 warm_start = 1,
-                nsubsamples = 1000) {
+                nsubsamples = 100) {
   m = stats::model.matrix(formula, data = data)
   intercept = get_intercept(m)
   y = stats::model.response(stats::model.frame(formula, data),
@@ -261,10 +233,6 @@ fqr <- function(formula, data, tau = 0.5,
   fit = fit_fqr(X = m, y = y,
                 tau = tau, se = se,
                 init_beta = rep(0, ncol(m)),
-                smoothing_window = smoothing_window,
-                maxiter = maxiter,
-                beta_tol = beta_tol,
-                check_tol = check_tol,
                 intercept = intercept,
                 nwarmup_samples = nwarmup_samples,
                 warm_start = warm_start,

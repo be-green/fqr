@@ -18,17 +18,23 @@ knitr::opts_chunk$set(
 [![R-CMD-check](https://github.com/be-green/fqr/workflows/R-CMD-check/badge.svg)](https://github.com/be-green/fqr/actions)
 <!-- badges: end -->
 
-The `fqr` package makes quantile regression fast and scaleable using accelerated
-gradient descent. For both big and small problems it is substantially faster than other quantile regression approaches. `fqr` can handle quantile regression problems on the order of 10 million rows and 100 columns in less than a minute, and can exactly match existing implementations on small problems.
+The `fqr` package makes quantile regression fast and scaleable using
+accelerated gradient descent. This project began as an attempt at a smoothed version of the quantile objective function based on [Nesterov's 2005 paper](https://link.springer.com/article/10.1007/s10107-004-0552-5) for use in the [quantspace package](https://github.com/be-green) for problems too large for interior point methods to handle. The [conquer package](https://github.com/XiaoouPan/conquer) has a similar, and really efficient approach to gradient descent based on kernel approximations of the quantile loss function, and an extremely useful step-size selection approach. Initially, the relevant code in this package was drawn from their implementation in the conquer [package](https://github.com/XiaoouPan/conquer) and [paper](https://doi.org/10.1016/j.jeconom.2021.07.010). Now this package uses a backtracking line search method with acceleration rather than the Barzilai-Borwein approach from `conquer`, but the `conquer` package is a really incredible piece of work you should also check out (it's often slightly faster than this pacakge).
 
-While the quantile loss function isn't differentiable, you can get an arbitrarily close smooth approximation by replacing the "check" function with an appropriately tilted least squares approximation for a small neighborhood around the origin. As the size of that window goes to zero, you have your check function back!
+`fqr`can handle quantile regression problems on the order of 10 million rows
+and 100 columns in less than a minute, and can exactly match existing
+implementations on small problems.
 
-The package uses 2 stopping rules to assess convergence: the maximum value of
-the gradient vector (for the coefficients of the quantile regression) and the
-relative change in the loss function (scaled by the step size).
+While the quantile loss function isn’t differentiable, you can get an
+arbitrarily close smooth approximation by replacing the “check” function
+with an appropriately tilted least squares approximation for a small
+neighborhood around the origin. As the size of that window goes to zero,
+you have your check function back!
 
-`fqr` is substantially faster than the `quantreg` package's simplex and interior
-point methods (e.g. "br" or "pfn"), especially for large problems. The algorithm implemented via the Armadillo library for linear algebra in C++. It also has no dependencies other than base R and (if building from source) a C++ compiler.
+The package uses 2 stopping rules to assess convergence: the maximum
+value of the gradient vector (for the coefficients of the quantile
+regression) and the relative change in the loss function (scaled by the
+step size).
 
 ## Installation
 
@@ -57,7 +63,7 @@ To turn off standard errors (and just get point predictions), you can set
 `se = F`.
 
 ```{r}
-fqr(area ~ peri, data = rock, se = F, tau = c(0.25, 0.5, 0.75))
+fqr(area ~ peri, data = rock, tau = 0.25, nsubsamples = 100)
 ```
 
 ## Benchmarks
@@ -70,8 +76,7 @@ how it goes.
  But with all of this done, let's compare to some benchmarks from the `sfn` and `pfn` algorithms, which are currently the fastest in the `quantreg` package.
  
 ```{r}
-# simulate some data, 101 x 100,000
-p <- 20
+p <- 50
 n <- 1e6
 beta <- rnorm(p + 1)
 
@@ -93,7 +98,7 @@ end = proc.time()
 end - start
 ```
 I attempted to run the same thing with the `quantreg` package, with the method advised for large datasets, like so: 
-```{r eval = F}
+```{r eval = T}
 # newton interior point method w/ pre-processing
 start <- proc.time()
 fit_pfn <- quantreg::rq.fit.pfn(x, y, tau = 0.5)
@@ -101,15 +106,15 @@ end <- proc.time()
 end - start
 ```
 
-but I killed it after 20 minutes (feel free to try this yourself!). I guess that leaves us with a comparison between ~3-5 seconds for `fqr` and a lower bound of 20 minutes for `pfn`?
+So for a reasonably sized problem, fqr is ~2 times as fast?
 
 # Big N, Big P
 
-Let's benchmark with a bigger set of columns.
+Let's benchmark with a bigger set of columns & rows.
 
 ```{r}
 p <- 100
-n <- 1e6
+n <- 3e6
 beta <- rnorm(p + 1)
 
 x <- cbind(1, matrix(rnorm(p * n), ncol = p, nrow = n))
@@ -124,7 +129,7 @@ end = proc.time()
 end - start
 ```
 
-I'm not going to run the quantreg `pfn` algorithm since it was so slow for the last problem. `fqr` is a little bit slower as the columns get big, taking 25-30 
+I'm not going to run the quantreg `pfn` algorithm since it was so slow for the last problem.
 seconds.
 
 ### Big N, Small P
@@ -132,7 +137,7 @@ Let's try a more manageable set of dimensions, with _lots_ of observations.
 
 ```{r}
 p <- 10
-n <- 1e7
+n <- 1e8
 beta <- rnorm(p + 1)
 
 x <- cbind(1, matrix(rnorm(p * n), ncol = p, nrow = n))
@@ -195,7 +200,7 @@ min(abs(fit$coefficients - fit_pfn$coefficients))
 It can also be faster for small problems, and with conservative tolerance parameters will come extremely close to the default `quantreg` outputs. Here's an example: 
 
 ```{r cache = F}
-# simulate some data, 101 x 10,000,000
+# simulate some data, 3 x 10,000
 p <- 3
 n <- 10000
 beta <- rnorm(p)
@@ -203,7 +208,7 @@ x <- cbind(matrix(rnorm(p * n), ncol = p, nrow = n))
 y <- 10 + x %*% beta + exp(rnorm(n, sd = 2))
 
 microbenchmark::microbenchmark(
-  fqr_fit <- fqr(y ~ ., se = F, beta_tol = 0, check_tol = 0,
+  fqr_fit <- fqr(y ~ ., se = F,
                  data = data.frame(y = y, x)),
   br_fit <- quantreg::rq(y ~ ., tau = 0.5, 
                     data = data.frame(y = y, x), method = "br"),
@@ -211,7 +216,7 @@ microbenchmark::microbenchmark(
 )
 ```
 
-The coefficients match out to 4 decimal places:
+The coefficients match out to 3 decimal places:
 
 ```{r}
 fqr_fit$coefficients - br_fit$coefficients
@@ -226,5 +231,6 @@ check <- function (x, tau = 0.5) {
 
 check(fqr_fit$residuals) -  check(br_fit$residuals)
 ```
+You can get even more accurate results (at the cost of some speed) by lowering the tolerance for the gradient and loss function.
 
-Still, though, the speed gains are most noticeable once N and P are "medium" or larger (e.g. for N < 300, probably just use quantreg).
+Still, though, the speed gains are most noticeable once N and P are "medium" or larger, otherwise probably just use quantreg.

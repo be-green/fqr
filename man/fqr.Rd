@@ -12,11 +12,11 @@ fit_fqr(
   se = T,
   init_beta = rep(0, ncol(X)),
   smoothing_window = .Machine$double.eps,
-  maxiter = 10000,
-  beta_tol = 1e-16,
-  check_tol = 1e-15 * nrow(X),
+  maxiter = 100,
+  beta_tol = 1e-05,
+  check_tol = 1e-05,
   intercept = 1,
-  nsubsamples = 1000,
+  nsubsamples = 100,
   nwarmup_samples = 1000,
   warm_start = 1
 )
@@ -27,12 +27,12 @@ fqr(
   tau = 0.5,
   se = T,
   smoothing_window = .Machine$double.eps,
-  maxiter = 10000,
-  beta_tol = 1e-16,
-  check_tol = 1e-15 * nrow(data),
-  nwarmup_samples = 1000,
+  maxiter = 1000,
+  beta_tol = 1e-05,
+  check_tol = 1e-05,
+  nwarmup_samples = pmin(pmax(100, 0.1 * nrow(data)), nrow(data)),
   warm_start = 1,
-  nsubsamples = 1000
+  nsubsamples = 100
 )
 }
 \arguments{
